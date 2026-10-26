@@ -1,0 +1,19 @@
+name: C++ build check
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build-check:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SDL2
+        run: brew install sdl2 sdl2_ttf pkg-config
+
+      - name: Check C++ source
+        run: |
+          c++ -std=c++17 -fsyntax-only $(pkg-config --cflags sdl2 SDL2_ttf) sb.cpp
