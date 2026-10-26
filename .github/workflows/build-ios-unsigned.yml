@@ -1,0 +1,69 @@
+name: Build unsigned iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'sb.cpp'
+      - 'CMakeLists.txt'
+      - 'ios/**'
+      - '.github/workflows/build-ios-unsigned.yml'
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install CMake
+        run: brew install cmake
+
+      - name: Configure iOS build
+        run: |
+          cmake -S . -B build -G Xcode \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_SYSROOT=iphoneos \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DSDL_SHARED=OFF \
+            -DSDL_STATIC=ON \
+            -DSDL_TEST=OFF \
+            -DSDL_TESTS=OFF \
+            -DSDL2TTF_VENDORED=ON \
+            -DSDL2TTF_SAMPLES=OFF \
+            -DSDL2TTF_INSTALL=OFF
+
+      - name: Build iOS app
+        run: |
+          cmake --build build \
+            --config Release \
+            --target AimTrainer \
+            -- -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Package unsigned IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_PATH="$(find build -type d -name 'AimTrainer.app' -print -quit)"
+          if [ -z "$APP_PATH" ]; then
+            echo "AimTrainer.app not found"
+            exit 1
+          fi
+          mkdir -p Payload
+          cp -R "$APP_PATH" Payload/AimTrainer.app
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent \
+            Payload AimTrainer-unsigned.ipa
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AimTrainer-unsigned-IPA
+          path: AimTrainer-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 7
