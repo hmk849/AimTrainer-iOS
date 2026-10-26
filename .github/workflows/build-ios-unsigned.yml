@@ -28,6 +28,7 @@ jobs:
             -DCMAKE_OSX_SYSROOT=iphoneos \
             -DCMAKE_OSX_ARCHITECTURES=arm64 \
             -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DCMAKE_BUILD_TYPE=Release \
             -DSDL_SHARED=OFF \
             -DSDL_STATIC=ON \
